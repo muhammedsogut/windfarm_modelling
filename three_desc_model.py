@@ -3,7 +3,6 @@ from copy import deepcopy
 
 from utilities import Data, Logger, importer
 from cutoffs import Polynomial, Polynomial_2, dict2cutoff
-#NeighborList = importer('NeighborList')
 
 class Gaussian(object):
     
@@ -52,7 +51,6 @@ class NeighborlistCalculator:
             turbineposition : list of float
             X and Y coordinates of turbines in the wind farm.
             """
-        #print(self.globals)
         r_cutoff = self.globals["cutoff"]
         cone_grad =  self.globals["cone_grad"]
         cone_offset = self.globals["cone_offset"]
@@ -68,9 +66,6 @@ class NeighborlistCalculator:
                         Rij = np.linalg.norm(Rj - Ri)
                         if Rij < r_cutoff:  #within cutoff
                             if np.abs(Ri[1]-Rj[1])<cone_grad*np.abs(Ri[0]-Rj[0])+cone_offset :
-                            #angij = np.mod(np.arctan2(Ri[1]-Rj[1],Ri[0]-Rj[0])+np.pi,2.*np.pi)-np.pi
-                            
-                           #if np.abs(angij)<ang_cutoff: #within angle of indepence
                                 neighborlist[count_i].append(count_j)
     
         return neighborlist
@@ -113,7 +108,6 @@ class FingerprintCalculator:
             neighborpositions = turbineposition[neighborindices]
             indexfp = self.get_fingerprint(index, symbol, turbineposition[index], neighborpositions)
             fingerprints.append(indexfp)
-            #print(indexfp)
         
         return fingerprints
     def get_fingerprint(self, index, symbol, turbinepos, neighborpositions):
@@ -148,18 +142,18 @@ class FingerprintCalculator:
                 ridge = calculate_G2(self, neighborpositions,G['eta'], G['offset'], self.globals["cutoff"], Ri, Rct)
             elif G['type'] == 'G4':
                 ridge = calculate_G4(self, neighborpositions,
-                                     G['gamma'], G['zeta'], G['eta'],
+                                     G['gamma'], G['eta'],
                                      self.globals["cutoff"], Ri, Rct)
             elif G['type'] == 'G6':
                 ridge = calculate_G6(self, neighborpositions,
-                                     G['gamma'], G['zeta'], G['eta'],
+                                     G['gamma'],  G['eta'],
                                      self.globals["cutoff"], Ri, Rct)
             else:
                 raise NotImplementedError('Unknown G type: %s' % G['type'])
             fingerprint[count] = ridge
         return fingerprint
-# Auxiliary functions #########################################################
 
+# Auxiliary functions #########################################################
 
 def calculate_G2(self, neighborpositions, eta, offset, cutoff, Ri, Rct):
     """Calculate G2 symmetry function
@@ -210,7 +204,7 @@ def calculate_G2(self, neighborpositions, eta, offset, cutoff, Ri, Rct):
         ridge *= (1-(np.exp(-eta*(Rij - offset) / (Rc)) *
                     cutoff_fxn(**args_cutoff_fxn) * cutoff_fxn_2(**args_cutoff_fxn_2)))
     return ridge
-def calculate_G4(self, neighborpositions, gamma, zeta, eta, cutoff, Ri, Rct):
+def calculate_G4(self, neighborpositions, gamma, eta, cutoff, Ri, Rct):
     """Calculate G4 symmetry function.
 
     Parameters
@@ -220,8 +214,6 @@ def calculate_G4(self, neighborpositions, gamma, zeta, eta, cutoff, Ri, Rct):
     neighborpositions : numpy.ndarray of float
         Array of Cartesian turbine positions.
     gamma : float
-        Parameter of Gaussian symmetry functions.
-    zeta : float
         Parameter of Gaussian symmetry functions.
     eta : float
         Parameter of Gaussian symmetry functions.
@@ -262,20 +254,14 @@ def calculate_G4(self, neighborpositions, gamma, zeta, eta, cutoff, Ri, Rct):
             cos_theta_ij = -1.
         theta_ij = np.arccos(cos_theta_ij)
         term = np.exp(-gamma * np.abs(theta_ij))
-        #term = (1. + cos_theta_ij) ** zeta
-        #term *= np.exp(-eta * (max(Rij,Rik) ** 2.) /(Rc ** 2.))
        
         term *= np.exp(-eta * (Rij ** 2.) /
                         (Rc ** 2.))
-       
-        
-        
         term *= cutoff_fxn(**_Rij) * cutoff_fxn_2(**_Rij_2)
         ridge *= (1-term)
-    ridge *= 2. ** (1. - zeta)
     return (ridge)
 
-def calculate_G6(self, neighborpositions, gamma, zeta, eta, cutoff, Ri, Rct):
+def calculate_G6(self, neighborpositions, gamma, eta, cutoff, Ri, Rct):
     """Calculate G6 symmetry function.
 
     Parameters
@@ -283,8 +269,6 @@ def calculate_G6(self, neighborpositions, gamma, zeta, eta, cutoff, Ri, Rct):
     neighborpositions : numpy.ndarray of float
         Array of Cartesian turbine positions.
     gamma : float
-        Parameter of Gaussian symmetry functions.
-    zeta : float
         Parameter of Gaussian symmetry functions.
     eta : float
         Parameter of Gaussian symmetry functions.
@@ -334,87 +318,8 @@ def calculate_G6(self, neighborpositions, gamma, zeta, eta, cutoff, Ri, Rct):
                 cos_theta_ijk = -1.
             theta_ijk = np.arccos(cos_theta_ijk)
             term = np.exp(-gamma * np.abs(theta_ijk))
-        #term = (1. + cos_theta_ij) ** zeta
             term *= np.exp(-eta * (max(Rij,Rik) ** 2.) /(Rc ** 2.))
-       
-        #term *= np.exp(-eta * (Rij ** 2.) /
-        #                (Rc ** 2.))
             term *= min(cutoff_fxn(**_Rij),cutoff_fxn(**_Rik)) * min(cutoff_fxn_2(**_Rij_2), cutoff_fxn_2(**_Rik_2))
             ridge *= (1-term)
 
-    ridge *= 2. ** (1. - zeta)
     return (ridge)
-def make_symmetry_functions(type, etas, offsets=None,
-                            zetas=None, gammas=None):
-    """Helper function to create Gaussian symmetry functions.
-    Returns a list of dictionaries with symmetry function parameters
-    in the format expected by the Gaussian class.
-
-    Parameters
-    ----------
-    elements : list of str
-        List of element types to be observed in this fingerprint.
-    type : str
-        Either G2, G4, or G6.
-    etas : list of floats
-        eta values to use in G2, G4 or G6 fingerprints
-    offsets: list of floats
-        offset values to use in G2 fingerprints
-    zetas : list of floats
-        zeta values to use in G4, and G6 fingerprints
-    gammas : list of floats
-        gamma values to use in G4, and G6 fingerprints
-
-    Returns
-    -------
-    G : list of dicts
-        A list, each item in the list contains a dictionary of fingerprint
-        parameters.
-    """
-    if type == 'G2':
-        offsets = [0.45] if offsets is None else offsets
-        G = [{'type': 'G2', 'eta': eta, 'offset': offset}
-             for eta in etas
-             for offset in offsets]
-        return G
-    elif type == 'G4':
-        G = []
-        for eta in etas:
-            for zeta in zetas:
-                for gamma in gammas:
-                    G.append({'type': 'G4',
-                            'eta': eta,
-                            'gamma': gamma,
-                            'zeta': zeta})
-    elif type == 'G6':
-        G = []
-        for eta in etas:
-            for zeta in zetas:
-                for gamma in gammas:
-                    G.append({'type': 'G6',
-                              'eta': eta,
-                              'gamma': gamma,
-                              'zeta': zeta})
-        return G
-    raise NotImplementedError('Unknown type: {}.'.format(type))
-
-
-def Kronecker(i, j):
-    """Kronecker delta function.
-
-    Parameters
-    ----------
-    i : int
-        First index of Kronecker delta.
-    j : int
-        Second index of Kronecker delta.
-
-    Returns
-    -------
-    int
-        The value of the Kronecker delta.
-    """
-    if i == j:
-        return 1
-    else:
-        return 0
