@@ -1,3 +1,0 @@
-T001 turbine0x turbine0y
-T002 turbine1x turbine1y
-T003 turbine2x turbine2y

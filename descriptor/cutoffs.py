@@ -93,9 +93,10 @@ class Polynomial(object):
         Radius above which neighbor interactions are ignored.
     """
 
-    def __init__(self, Rc, gamma=4):
+    def __init__(self, Rc, Rct, gamma=4):
         self.gamma = gamma
         self.Rc = Rc
+        self.Rct = Rct
 
     def __call__(self, Rij):
         """
@@ -103,44 +104,30 @@ class Polynomial(object):
         ----------
         Rij : float
             Distance between pair atoms.
+        Rct : float
+            Distance where cutoff function will start.
 
         Returns
         -------
         value : float
             The value of the cutoff function.
         """
+        #R1=3000
+        R1=self.Rct
         if Rij > self.Rc:
             return 0.
+        elif Rij < R1:
+            return 1.
         else:
-            value = 1. + self.gamma * (Rij / self.Rc) ** (self.gamma + 1) - \
-                (self.gamma + 1) * (Rij / self.Rc) ** self.gamma
-            return value
-
-    def prime(self, Rij):
-        """Derivative (dfc_dRij) of the Polynomial cutoff function with respect to Rij.
-
-        Parameters
-        ----------
-        Rij : float
-            Distance between pair atoms.
-
-        Returns
-        -------
-        float
-            The value of derivative of the cutoff function.
-        """
-        if Rij > self.Rc:
-            return 0.
-        else:
-            value = (self.gamma * (self.gamma + 1) / self.Rc) * \
-                ((Rij / self.Rc) ** self.gamma -
-                 (Rij / self.Rc) ** (self.gamma - 1))
+            value = 1. + self.gamma * ((Rij-R1) / (self.Rc-R1)) ** (self.gamma + 1) - \
+                (self.gamma + 1) * ((Rij-R1) / (self.Rc-R1)) ** self.gamma
             return value
 
     def todict(self):
         return {'name': 'Polynomial',
                 'kwargs': {'Rc': self.Rc,
-                           'gamma': self.gamma
+                           'gamma': self.gamma,
+                           'Rct': self.Rct
                            }
                 }
 
@@ -148,3 +135,58 @@ class Polynomial(object):
         return ('<Polynomial cutoff with Rc=%.3f and gamma=%i '
                 'from amp.descriptor.cutoffs>'
                 % (self.Rc, self.gamma))
+
+class Polynomial_2(object):
+    """Polynomial functional form suggested by Khorshidi and Peterson.
+
+    Parameters
+    ----------
+    gamma : float
+        The power of polynomial.
+    Rc : float
+        Radius above which neighbor interactions are ignored.
+    """
+
+    def __init__(self, delta_R, gamma=4):
+        self.gamma = gamma
+        #self.Rc = Rc
+        self.delta_R = delta_R
+
+    def __call__(self, Rij, Rc):
+        """
+        Parameters
+        ----------
+        Rij : float
+            Distance between pair atoms.
+        Rct : float
+            Distance where cutoff function will start.
+
+        Returns
+        -------
+        value : float
+            The value of the cutoff function.
+        """
+        delta_R=self.delta_R
+        R1 = Rc-delta_R
+        
+        if Rij > Rc:
+            return 0.
+        elif Rij < R1:
+            return 1.
+        else:
+            value = 1. + self.gamma * ((Rij-R1) / delta_R) ** (self.gamma + 1) - \
+                (self.gamma + 1) * ((Rij-R1) / delta_R) ** self.gamma
+            return value
+
+    def todict(self):
+        return {'name': 'Polynomial_2',
+                'kwargs': {'gamma': self.gamma,
+                           'delta_R': self.delta_R
+                           }
+                }
+
+    def __repr__(self):
+        return ('<Polynomial cutoff with Rc=%.3f and gamma=%i '
+                'from amp.descriptor.cutoffs>'
+                % (self.Rc, self.gamma))
+
