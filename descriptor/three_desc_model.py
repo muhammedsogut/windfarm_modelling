@@ -323,3 +323,50 @@ def calculate_G6(self, neighborpositions, gamma, eta, cutoff, Ri, Rct):
             ridge *= (1-term)
 
     return (ridge)
+
+def make_symmetry_functions(turbines, type, etas, offsets=None,
+                            zetas=None, gammas=None):
+    """Helper function to create Gaussian symmetry functions.
+    Returns a list of dictionaries with symmetry function parameters
+    in the format expected by the Gaussian class.
+
+    Parameters
+    ----------
+    turbines : list of str
+        List of element types to be observed in this fingerprint.
+    type : str
+        Either G2, G4, or G6.
+    etas : list of floats
+        eta values to use in G2, G4 or G6 fingerprints
+    offsets: list of floats
+        offset values to use in G2 fingerprints
+    zetas : list of floats
+        zeta values to use in G4, and G6 fingerprints
+    gammas : list of floats
+        gamma values to use in G4, and G6 fingerprints
+
+    Returns
+    -------
+    G : list of dicts
+        A list, each item in the list contains a dictionary of fingerprint
+        parameters.
+    """
+    if type == 'G2':
+        offsets = [1.0151402] if offsets is None else offsets
+        G = [{'type': 'G2', 'turbine':turbines, 'eta': eta, 'offset': offset}
+             for eta in etas
+             for offset in offsets]
+        return G
+    elif type == 'G4':
+        G = []
+        for eta in etas:
+            for gamma in gammas:
+                G.append({'type': 'G4', 'turbine':turbines, 'eta': eta, 'gamma': gamma})
+        return G
+    elif type == 'G6':
+        G = []
+        for eta in etas:
+            for gamma in gammas:
+                G.append({'type': 'G6', 'turbine':turbines, 'eta': eta, 'gamma': gamma})
+        return G
+    raise NotImplementedError('Unknown type: {}.'.format(type))
