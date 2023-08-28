@@ -250,8 +250,9 @@ def calculate_G4(self, neighborpositions, gamma, eta, cutoff, Ri, Rct):
         _Rij = dict(Rij=Rij)
         _Rij_2 = dict(Rij=Ry, Rc=Rcy)
         cos_theta_ij = np.dot(Rij_vector,np.array([-1.0,0.])) / Rij
-        if cos_theta_ij < -1.:  # Can occur by rounding error.
-            cos_theta_ij = -1.
+        # if cos_theta_ij < -1.:  # Can occur by rounding error.
+        #     cos_theta_ij = -1.
+        cos_theta_ij=np.clip(cos_theta_ij, -1, 1)
         theta_ij = np.arccos(cos_theta_ij)
         term = np.exp(-gamma * np.abs(theta_ij))
        
@@ -314,8 +315,9 @@ def calculate_G6(self, neighborpositions, gamma, eta, cutoff, Ri, Rct):
             _Rik_2 = dict(Rij=Rky, Rc=Rcky)
         
             cos_theta_ijk = np.dot(Rij_vector, Rik_vector)/ (Rij*Rik)
-            if cos_theta_ijk < -1.: # Can occur by rounding error.
-                cos_theta_ijk = -1.
+            # if cos_theta_ijk < -1.: # Can occur by rounding error.
+            #     cos_theta_ijk = -1.
+            cos_theta_ijk=np.clip(cos_theta_ijk, -1, 1)
             theta_ijk = np.arccos(cos_theta_ijk)
             term = np.exp(-gamma * np.abs(theta_ijk))
             term *= np.exp(-eta * (max(Rij,Rik) ** 2.) /(Rc ** 2.))
